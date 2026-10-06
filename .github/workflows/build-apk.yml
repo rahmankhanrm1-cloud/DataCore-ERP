@@ -1,5 +1,7 @@
 name: Build DataCore ERP APK
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 jobs:
   build:
@@ -13,17 +15,24 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Reconstruct final source
+      - name: Extract source
         run: |
-          cat source-parts/part-* | base64 -d > datacore-erp-final.zip
+          rm -rf app
+          mkdir app
           unzip -o datacore-erp-final.zip -d app
+          if [ -d app/datacore_work ]; then
+            shopt -s dotglob
+            mv app/datacore_work/* app/
+            rmdir app/datacore_work
+          fi
       - name: Install and build web app
         working-directory: app
         run: |
-          npm install
-          npm install @capacitor/core @capacitor/android
-          npm install -D @capacitor/cli
+          npm install --no-audit --no-fund
+          npm install @capacitor/core@7 @capacitor/android@7 --no-audit --no-fund
+          npm install -D @capacitor/cli@7 --no-audit --no-fund
           npm run build
+          printf '%s\n' '{"appId":"com.datacore.erp","appName":"DataCore ERP","webDir":"dist"}' > capacitor.config.json
           npx cap add android
           npx cap sync android
       - name: Build Android APK
