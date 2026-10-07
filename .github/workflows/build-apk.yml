@@ -15,7 +15,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Extract source
+      - name: Extract source and fix Android Google Sign-In
         run: |
           rm -rf app
           mkdir app
@@ -25,6 +25,13 @@ jobs:
             mv app/datacore_work/* app/
             rmdir app/datacore_work
           fi
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("app/src/components/LoginScreen.tsx")
+          s=p.read_text()
+          s=s.replace("signInWithRedirect", "signInWithPopup")
+          p.write_text(s)
+          PY
       - name: Install and build web app
         working-directory: app
         run: |
