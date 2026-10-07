@@ -1,4 +1,4 @@
-name: Build DataCore ERP APK
+name: Build DataCore ERP Native Google APK
 on:
   push:
     branches: [main]
@@ -15,37 +15,42 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Extract source and fix Android Google Sign-In
+      - name: Extract and patch native Google Sign-In
         run: |
-          rm -rf app
-          mkdir app
+          rm -rf app && mkdir app
           unzip -o datacore-erp-final.zip -d app
-          if [ -d app/datacore_work ]; then
-            shopt -s dotglob
-            mv app/datacore_work/* app/
-            rmdir app/datacore_work
-          fi
+          if [ -d app/datacore_work ]; then shopt -s dotglob; mv app/datacore_work/* app/; rmdir app/datacore_work; fi
           python3 - <<'PY'
           from pathlib import Path
+          import json
           p=Path("app/src/components/LoginScreen.tsx")
           s=p.read_text()
-          s=s.replace("signInWithRedirect", "signInWithPopup")
-          p.write_text(s)
+          cfg=json.loads(Path("app/firebase-applet-config.json").read_text())
+          client_id=cfg["oAuthClientId"]
+          s=s.replace("  signInWithPopup,\n", "  signInWithCredential,\n")
+          s=s.replace("import { ShieldCheck", "import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';\nimport { ShieldCheck")
+          old="      const provider = new GoogleAuthProvider();\n      await signInWithPopup(auth, provider);"
+          new=f"      await GoogleSignIn.initialize({{ clientId: '{client_id}' }});\n      const result = await GoogleSignIn.signIn();\n      const credential = GoogleAuthProvider.credential(result.idToken);\n      await signInWithCredential(auth, credential);"
+          if old not in s: raise SystemExit("Google login block not found")
+          p.write_text(s.replace(old,new))
           PY
-      - name: Install and build web app
+      - name: Install and build
         working-directory: app
         run: |
           npm install --no-audit --no-fund
-          npm install @capacitor/core@7 @capacitor/android@7 --no-audit --no-fund
-          npm install -D @capacitor/cli@7 --no-audit --no-fund
+          npm install @capacitor/core@8 @capacitor/android@8 @capawesome/capacitor-google-sign-in --no-audit --no-fund
+          npm install -D @capacitor/cli@8 --no-audit --no-fund
           npm run build
           printf '%s\n' '{"appId":"com.datacore.erp","appName":"DataCore ERP","webDir":"dist"}' > capacitor.config.json
           npx cap add android
           npx cap sync android
-      - name: Build Android APK
+      - name: Build APK and print signing SHA-1
         working-directory: app/android
-        run: chmod +x gradlew && ./gradlew assembleDebug
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          keytool -printcert -jarfile app/build/outputs/apk/debug/app-debug.apk | grep -E 'SHA1:|Owner:|Issuer:' || true
       - uses: actions/upload-artifact@v4
         with:
-          name: DataCore-ERP-APK
+          name: DataCore-ERP-Native-Google-APK
           path: app/android/app/build/outputs/apk/debug/app-debug.apk
