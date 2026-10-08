@@ -8,6 +8,7 @@ import { CustomersScreen } from './CustomersScreen';
 import { WorkOrdersScreen } from './WorkOrdersScreen';
 import { InventoryScreen } from './InventoryScreen';
 import { PurchasesScreen } from './PurchasesScreen';
+import { BusinessRecordsScreen } from './BusinessRecordsScreen';
 import { BUSINESS_MODULES, type BusinessType } from './businessModules';
 import { getCustomerNavigation, type BusinessAccess } from './businessAccess';
 
@@ -70,7 +71,7 @@ export function BusinessDashboard({ account, activePage, onNavigate }: Props) {
       ) : (
         <section className="rounded-xl bg-slate-800 p-5 border border-slate-700">
           <h2 className="text-lg font-semibold">{selected}</h2>
-          <p className="mt-2 text-slate-300">This module is under development. No records are saved here yet.</p>
+          <BusinessRecordsScreen tenantId={account.uid} businessType={account.businessType} page={selected} />
         </section>
       )}
     </main>
