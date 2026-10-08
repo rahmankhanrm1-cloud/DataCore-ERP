@@ -91,7 +91,7 @@ jobs:
           release="buildTypes {"
           if release not in s: raise SystemExit("buildTypes block not found")
           import re
-          s, count = re.subn(r"(buildTypes\\s*\\{\\s*release\\s*\\{)", r"\\1\\n            signingConfig signingConfigs.release", s, count=1)
+          s, count = re.subn(r"(buildTypes\s*\{\s*release\s*\{)", lambda m: m.group(1) + "\n            signingConfig signingConfigs.release", s, count=1)
           if count != 1: raise SystemExit("Release build type not found")
           p.write_text(s)
           PY
