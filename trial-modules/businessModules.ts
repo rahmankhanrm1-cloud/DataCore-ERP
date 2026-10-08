@@ -46,7 +46,7 @@ export const BUSINESS_MODULES: Record<BusinessType, BusinessModule> = {
   grocery: {
     type: 'grocery', label: 'Grocery',
     staffFeatures: ['Employees', 'Attendance', 'Shifts', 'Leave', 'Overtime', 'Payroll', 'Attendance Reports'],
-    navigation: ['Dashboard', 'Products', 'Barcode POS', 'Inventory', 'Purchases', 'Suppliers', 'Customers', 'Returns', 'Expiry Tracking', 'Billing', 'Reports', 'Employees', 'Attendance', 'Payroll', 'Settings'],
+    navigation: ['Dashboard', 'Products', 'Barcode POS', 'Sales', 'Inventory', 'Purchases', 'Suppliers', 'Customers', 'Returns', 'Expiry Tracking', 'Billing', 'Reports', 'Employees', 'Attendance', 'Payroll', 'Settings'],
     collections: ['categories', 'products', 'stockBatches', 'stockMovements', 'sales', 'saleItems', 'purchases', 'suppliers', 'customers', 'returns', 'payments', 'expenses', 'employees', 'attendance', 'shifts', 'leaveRequests', 'payroll', 'settings'],
     starterCatalog: [
       { id: 'grocery-rice', name: 'Rice', category: 'Grains', unit: 'kg', price: 0, active: true },
