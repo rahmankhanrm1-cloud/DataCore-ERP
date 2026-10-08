@@ -69,15 +69,7 @@ jobs:
           s=s.replace(anchor,"    if (!currentUser || isOwner()) { setTrialBusinessType(null); return; }",1)
           anchor="  // Navigation Items"
           assert anchor in s, 'Missing navigation anchor'
-          insertion="""  if (!isOwner()) {
-            if (!trialBusinessType) return <div className="min-h-screen bg-slate-950 text-white p-8">Invalid business type. Contact DataCore ERP administrator.<button className="block mt-4 bg-cyan-700 p-3 rounded" onClick={handleLogout}>Sign Out</button></div>;
-            return <div className="min-h-screen bg-slate-950 text-white">
-              <header className="p-4 bg-slate-900 flex justify-between items-center"><strong>DataCore ERP — {trialBusinessType}</strong><button onClick={handleLogout} className="bg-slate-700 rounded px-3 py-2">Sign Out</button></header>
-              <BusinessDashboard businessType={trialBusinessType} />
-            </div>;
-          }
-
-"""
+          insertion="  if (!isOwner()) {\n    if (!trialBusinessType) return <div className=\"min-h-screen bg-slate-950 text-white p-8\">Invalid business type. Contact DataCore ERP administrator.<button className=\"block mt-4 bg-cyan-700 p-3 rounded\" onClick={handleLogout}>Sign Out</button></div>;\n    return <div className=\"min-h-screen bg-slate-950 text-white\">\n      <header className=\"p-4 bg-slate-900 flex justify-between items-center\"><strong>DataCore ERP — {trialBusinessType}</strong><button onClick={handleLogout} className=\"bg-slate-700 rounded px-3 py-2\">Sign Out</button></header>\n      <BusinessDashboard account={{uid: currentUser.uid, businessType: trialBusinessType, status: 'active', expiresAtMillis: trialExpiry}} activePage={activeModule} onNavigate={setActiveModule} />\n    </div>;\n  }\n\n"
           s=s.replace(anchor,insertion+anchor,1)
           p.write_text(s)
           print('Integrated business type from trialAccounts into customer dashboard routing')
