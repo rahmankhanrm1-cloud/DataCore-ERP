@@ -12,7 +12,7 @@ export function InventoryScreen({tenantId,businessType}:{tenantId:string;busines
  const [message,setMessage]=useState('');
  useEffect(()=>{
   if(auth.currentUser?.uid!==tenantId){setMessage('Please sign in');return;}
-  return onSnapshot(query(erpCollection('stockMovements'),limit(100)),s=>setRows(s.docs.map(d=>({id:d.id,...d.data()} as Stock)),e=>setMessage(e.message));
+  return onSnapshot(query(erpCollection('stockMovements'),limit(100)),s=>setRows(s.docs.map(d=>({id:d.id,...d.data()} as Stock))),e=>setMessage(e.message));
  },[tenantId]);
  async function save(){
   try{
