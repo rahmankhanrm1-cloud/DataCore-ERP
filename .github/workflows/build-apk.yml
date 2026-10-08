@@ -1,7 +1,7 @@
-name: Build DataCore ERP APK
+name: Build DataCore ERP Trial V1 (Unverified)
 on:
   push:
-    branches: [main]
+    branches: [feature/trial-v1]
   workflow_dispatch:
 jobs:
   build:
@@ -18,7 +18,7 @@ jobs:
       - name: Extract and patch native Google Sign-In
         run: |
           rm -rf app && mkdir app
-          unzip -o datacore-erp-final.zip -d app
+          unzip -o DataCore-ERP-Trial-V1-Ready-for-GitHub.zip -d app
           if [ -d app/datacore_work ]; then shopt -s dotglob; mv app/datacore_work/* app/; rmdir app/datacore_work; fi
           python3 - <<'PY'
           from pathlib import Path
@@ -101,5 +101,5 @@ jobs:
           rm -f app/release-signing.jks
       - uses: actions/upload-artifact@v4
         with:
-          name: DataCore-ERP-Signed-Release-APK
+          name: DataCore-ERP-Trial-V1-UNVERIFIED
           path: app/android/app/build/outputs/apk/release/app-release.apk
