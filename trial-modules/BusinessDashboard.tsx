@@ -7,6 +7,7 @@ import { CatalogScreen } from './CatalogScreen';
 import { CustomersScreen } from './CustomersScreen';
 import { WorkOrdersScreen } from './WorkOrdersScreen';
 import { InventoryScreen } from './InventoryScreen';
+import { PurchasesScreen } from './PurchasesScreen';
 import { BUSINESS_MODULES, type BusinessType } from './businessModules';
 import { getCustomerNavigation, type BusinessAccess } from './businessAccess';
 
@@ -38,7 +39,9 @@ export function BusinessDashboard({ account, activePage, onNavigate }: Props) {
           </button>
         ))}
       </nav>
-      {selected === 'Inventory' ? (
+      {selected === 'Purchases' ? (
+        <PurchasesScreen tenantId={account.uid} businessType={account.businessType} />
+      ) : selected === 'Inventory' ? (
         <InventoryScreen tenantId={account.uid} businessType={account.businessType} />
       ) : selected === (account.businessType==='workshop'?'Job Cards':account.businessType==='grocery'?'Sales':'Orders') ? (
         <WorkOrdersScreen tenantId={account.uid} businessType={account.businessType} />
