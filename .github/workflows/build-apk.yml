@@ -56,6 +56,7 @@ jobs:
           cp trial-modules/WorkOrdersScreen.tsx app/src/business/WorkOrdersScreen.tsx
           cp trial-modules/InventoryScreen.tsx app/src/business/InventoryScreen.tsx
           cp trial-modules/PurchasesScreen.tsx app/src/business/PurchasesScreen.tsx
+          cp trial-modules/BusinessRecordsScreen.tsx app/src/business/BusinessRecordsScreen.tsx
           test -s app/src/business/businessModules.ts
       - name: Wire trial customer business dashboard into actual App
         run: |
