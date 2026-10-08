@@ -18,7 +18,7 @@ service cloud.firestore {
       allow update, delete: if owner() && request.resource.data.createdAt == resource.data.createdAt;
     }
     match /tenants/{uid}/{coll}/{docId} {
-      allow read, write: if active(uid) && coll in ['settings','products','sales','purchases','customers','suppliers','employees','expenses','payments','invoices','attendance','payroll','menuItems','services','parts','orders','laundryOrders','jobCards','stockMovements'];
+      allow read, write: if active(uid) && coll in ['settings','products','sales','purchases','customers','suppliers','employees','expenses','payments','invoices','attendance','payroll','menuItems','services','parts','orders','laundryOrders','jobCards','stockMovements','restaurantTables','kitchenTickets','recipes','ingredients','customerIntake','garmentTracking','laundryWorkflow','deliveries','returns','expiryTracking','vehicles','inspections','estimates','serviceJobs','priceList','posTransactions','reports','businessSettings'];
     }
     match /{coll}/{docId} {
       allow read, write: if owner() && coll in ['settings','products','sales','purchases','customers','suppliers','employees','expenses','payments'];
