@@ -44,15 +44,15 @@ jobs:
           from pathlib import Path
           import json,re
           dbid=json.loads(Path('firebase.json').read_text())['firestore'][0]['database']
-          sources=list(Path('app/src').rglob('*.ts'))+list(Path('app/src').rglob('*.tsx'))
+          sources=list(Path('app').rglob('*.ts'))+list(Path('app').rglob('*.tsx'))
           patched=0
           for p in sources:
               s=p.read_text()
               if not re.search(r'\bgetFirestore\s*\(',s): continue
               # Only change the app initialization call, not arbitrary function calls.
-              if 'initializeApp(' not in s and 'getApps(' not in s: continue
+              if 'initializeApp(' not in s and 'getApps(' not in s and 'firebase' not in p.name.lower(): continue
               pattern=r'getFirestore\s*\(\s*([A-Za-z_$][\w$]*)\s*\)'
-              out,n=re.subn(pattern,lambda m:'getFirestore('+m.group(1)+', '+repr(dbid)+')',s)
+              out,n=re.subn(pattern,lambda m:'getFirestore('+((m.group(1) or 'app')+', ')+repr(dbid)+')',s)
               if n:
                   p.write_text(out)
                   patched+=n
