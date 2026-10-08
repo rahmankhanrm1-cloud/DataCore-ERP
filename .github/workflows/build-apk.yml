@@ -34,6 +34,26 @@ jobs:
           if old not in s: raise SystemExit("Google login block not found")
           p.write_text(s.replace(old,new))
           PY
+      - name: Validate trial source isolation before build
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('app/src')
+          required=['App.tsx','tenant.ts','components/TrialManager.tsx']
+          for file in required:
+              if not (root/file).exists(): raise SystemExit('Missing trial file: '+file)
+          tenant=(root/'tenant.ts').read_text()
+          if "['tenants', user.uid, name]" not in tenant: raise SystemExit('Tenant isolation helper missing')
+          app=(root/'App.tsx').read_text()
+          if "trialAccounts" not in app or "trialStatus !== 'active'" not in app: raise SystemExit('Trial access gate missing')
+          for p in root.rglob('*.tsx'):
+              if p.name in ('TrialManager.tsx',): continue
+              content=p.read_text()
+              if re.search(r'\\b(?:collection|doc)\\s*\\(\\s*db\\s*,',content):
+                  raise SystemExit('Direct Firestore access needs review: '+str(p))
+          print('Trial isolation static preflight passed')
+          PY
       - name: Install and build web app
         working-directory: app
         run: |
