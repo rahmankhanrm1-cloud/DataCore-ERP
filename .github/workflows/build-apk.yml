@@ -38,6 +38,11 @@ jobs:
               login=login.replace('import { ShieldCheck,', 'import { UserPlus, ShieldCheck,')
               p.write_text(login)
           PY
+      - name: Include business module registry
+        run: |
+          mkdir -p app/src/business
+          cp trial-modules/businessModules.ts app/src/business/businessModules.ts
+          test -s app/src/business/businessModules.ts
       - name: Inspect Firestore initialization safely
         run: |
           python3 - <<'PY'
