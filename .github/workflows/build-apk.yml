@@ -42,6 +42,7 @@ jobs:
         run: |
           mkdir -p app/src/business
           cp trial-modules/businessModules.ts app/src/business/businessModules.ts
+          cp trial-modules/employeeAttendance.ts app/src/business/employeeAttendance.ts
           test -s app/src/business/businessModules.ts
       - name: Inspect Firestore initialization safely
         run: |
