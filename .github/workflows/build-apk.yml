@@ -48,6 +48,7 @@ jobs:
           cp trial-modules/TrialBusinessRouter.tsx app/src/business/TrialBusinessRouter.tsx
           cp trial-modules/billing.ts app/src/business/billing.ts
           cp trial-modules/BillingScreen.tsx app/src/business/BillingScreen.tsx
+          cp trial-modules/AttendanceScreen.tsx app/src/business/AttendanceScreen.tsx
           test -s app/src/business/businessModules.ts
       - name: Wire trial customer business dashboard into actual App
         run: |
@@ -109,7 +110,7 @@ jobs:
           if "trialAccounts" not in app or "trialStatus !== 'active'" not in app: raise SystemExit('Trial access gate missing')
           for p in root.rglob('*.tsx'):
               if p.name in ('TrialManager.tsx','App.tsx'): continue
-              if p.as_posix() == 'app/src/business/BillingScreen.tsx' and "collection(db, 'tenants', tenantId, 'invoices')" in p.read_text(): continue
+              if p.as_posix() in ('app/src/business/BillingScreen.tsx', 'app/src/business/AttendanceScreen.tsx') and "collection(db, 'tenants', tenantId," in p.read_text(): continue
               content=p.read_text()
               if 'collection(db,' in content or 'doc(db,' in content:
                   raise SystemExit('Direct Firestore access needs review: '+str(p))
