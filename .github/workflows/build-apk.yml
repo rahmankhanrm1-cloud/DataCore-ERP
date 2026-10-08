@@ -3,11 +3,28 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Require persistent signing configuration
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_SIGNING_SHA1: ${{ vars.ANDROID_SIGNING_SHA1 }}
+        run: |
+          set -euo pipefail
+          for field in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD ANDROID_SIGNING_SHA1; do
+            if [ -z "${!field:-}" ]; then
+              echo "::error::Missing $field. Configure persistent signing in repository settings; no temporary debug key will be generated."
+              exit 1
+            fi
+          done
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -44,13 +61,50 @@ jobs:
           printf '%s\n' '{"appId":"com.datacore.erp","appName":"DataCore ERP","webDir":"dist"}' > capacitor.config.json
           npx cap add android
           npx cap sync android
-      - name: Build APK and print signing SHA-1
+      - name: Build unsigned release APK
         working-directory: app/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
-          keytool -printcert -jarfile app/build/outputs/apk/debug/app-debug.apk | grep -E 'SHA1:|Owner:|Issuer:' || true
+          ./gradlew assembleRelease
+      - name: Sign and verify release APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_SIGNING_SHA1: ${{ vars.ANDROID_SIGNING_SHA1 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          signing_dir="$(mktemp -d "$RUNNER_TEMP/datacore-signing.XXXXXX")"
+          trap 'rm -rf "$signing_dir"' EXIT
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$signing_dir/release.jks"
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          test -x "$build_tools/apksigner"
+          mkdir -p signed-apk
+          "$build_tools/zipalign" -P 16 -f 4 app/android/app/build/outputs/apk/release/app-release-unsigned.apk "$signing_dir/aligned.apk"
+          "$build_tools/apksigner" sign --ks "$signing_dir/release.jks" \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-pass env:ANDROID_KEYSTORE_PASSWORD --key-pass env:ANDROID_KEY_PASSWORD \
+            --out signed-apk/DataCore-ERP.apk "$signing_dir/aligned.apk"
+          "$build_tools/apksigner" verify --verbose --print-certs signed-apk/DataCore-ERP.apk > "$signing_dir/certificate.txt"
+          python3 - "$signing_dir/certificate.txt" <<'PYCODE'
+          import os, re, sys
+          from pathlib import Path
+          report = Path(sys.argv[1]).read_text()
+          fingerprints = re.findall(r"^Signer #[0-9]+ certificate SHA-1 digest: ([0-9a-fA-F]+)$", report, re.M)
+          expected = os.environ["ANDROID_SIGNING_SHA1"].replace(":", "").strip().lower()
+          if not re.fullmatch(r"[0-9a-f]{40}", expected):
+              raise SystemExit("Invalid ANDROID_SIGNING_SHA1: expected a SHA-1 certificate fingerprint.")
+          if len(fingerprints) != 1 or fingerprints[0].lower() != expected:
+              raise SystemExit("APK certificate does not match ANDROID_SIGNING_SHA1; refusing to upload.")
+          Path("signed-apk/signing-sha1.txt").write_text(":".join(expected[i:i+2].upper() for i in range(0,40,2)) + "\n")
+          print("APK signature verified and certificate matches the configured fingerprint. OAuth registration and device login still require verification.")
+          PYCODE
       - uses: actions/upload-artifact@v4
         with:
-          name: DataCore-ERP-Native-Google-APK
-          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+          name: DataCore-ERP-Signed-APK
+          path: |
+            signed-apk/DataCore-ERP.apk
+            signed-apk/signing-sha1.txt
+          if-no-files-found: error
