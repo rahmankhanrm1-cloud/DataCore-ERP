@@ -4,6 +4,7 @@ on:
     branches: [feature/trial-v1]
     paths:
       - firestore.rules
+      - trial-src/rules-test.cjs
       - .github/workflows/validate-firestore-trial.yml
   workflow_dispatch:
 jobs:
