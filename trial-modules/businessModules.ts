@@ -15,13 +15,15 @@ export type BusinessModule = {
   navigation: readonly string[];
   collections: readonly string[];
   starterCatalog: readonly CatalogItem[];
+  staffFeatures: readonly string[];
 };
 
 export const BUSINESS_MODULES: Record<BusinessType, BusinessModule> = {
   restaurant: {
     type: 'restaurant', label: 'Restaurant',
-    navigation: ['Dashboard', 'Menu', 'Tables', 'Orders', 'Kitchen Tickets', 'Recipes', 'Ingredients', 'Inventory', 'Purchases', 'Customers', 'Billing', 'Reports', 'Settings'],
-    collections: ['menuCategories', 'menuItems', 'tables', 'orders', 'orderItems', 'kitchenTickets', 'recipes', 'ingredients', 'stockMovements', 'purchases', 'customers', 'payments', 'expenses', 'settings'],
+    staffFeatures: ['Employees', 'Attendance', 'Shifts', 'Leave', 'Overtime', 'Payroll', 'Attendance Reports'],
+    navigation: ['Dashboard', 'Menu', 'Tables', 'Orders', 'Kitchen Tickets', 'Recipes', 'Ingredients', 'Inventory', 'Purchases', 'Customers', 'Billing', 'Reports', 'Employees', 'Attendance', 'Settings'],
+    collections: ['menuCategories', 'menuItems', 'tables', 'orders', 'orderItems', 'kitchenTickets', 'recipes', 'ingredients', 'stockMovements', 'purchases', 'customers', 'payments', 'expenses', 'employees', 'attendance', 'shifts', 'leaveRequests', 'payroll', 'settings'],
     starterCatalog: [
       { id: 'rest-tea', name: 'Tea', category: 'Beverages', unit: 'cup', price: 0, active: true },
       { id: 'rest-coffee', name: 'Coffee', category: 'Beverages', unit: 'cup', price: 0, active: true },
@@ -31,8 +33,9 @@ export const BUSINESS_MODULES: Record<BusinessType, BusinessModule> = {
   },
   laundry: {
     type: 'laundry', label: 'Laundry',
-    navigation: ['Dashboard', 'Services', 'Price List', 'Customer Intake', 'Orders', 'Garment Tracking', 'Workflow', 'Pickup & Delivery', 'Billing', 'Reports', 'Settings'],
-    collections: ['serviceCategories', 'services', 'garmentTypes', 'laundryOrders', 'laundryOrderItems', 'garmentTags', 'workflowEvents', 'pickups', 'deliveries', 'customers', 'payments', 'expenses', 'settings'],
+    staffFeatures: ['Employees', 'Attendance', 'Shifts', 'Leave', 'Overtime', 'Payroll', 'Attendance Reports'],
+    navigation: ['Dashboard', 'Services', 'Price List', 'Customer Intake', 'Orders', 'Garment Tracking', 'Workflow', 'Pickup & Delivery', 'Billing', 'Reports', 'Employees', 'Attendance', 'Settings'],
+    collections: ['serviceCategories', 'services', 'garmentTypes', 'laundryOrders', 'laundryOrderItems', 'garmentTags', 'workflowEvents', 'pickups', 'deliveries', 'customers', 'payments', 'expenses', 'employees', 'attendance', 'shifts', 'leaveRequests', 'payroll', 'settings'],
     starterCatalog: [
       { id: 'laundry-shirt-wash', name: 'Shirt Wash', category: 'Wash', unit: 'piece', price: 0, active: true },
       { id: 'laundry-shirt-iron', name: 'Shirt Iron', category: 'Iron', unit: 'piece', price: 0, active: true },
@@ -42,8 +45,9 @@ export const BUSINESS_MODULES: Record<BusinessType, BusinessModule> = {
   },
   grocery: {
     type: 'grocery', label: 'Grocery',
-    navigation: ['Dashboard', 'Products', 'Barcode POS', 'Inventory', 'Purchases', 'Suppliers', 'Customers', 'Returns', 'Expiry Tracking', 'Billing', 'Reports', 'Settings'],
-    collections: ['categories', 'products', 'stockBatches', 'stockMovements', 'sales', 'saleItems', 'purchases', 'suppliers', 'customers', 'returns', 'payments', 'expenses', 'settings'],
+    staffFeatures: ['Employees', 'Attendance', 'Shifts', 'Leave', 'Overtime', 'Payroll', 'Attendance Reports'],
+    navigation: ['Dashboard', 'Products', 'Barcode POS', 'Inventory', 'Purchases', 'Suppliers', 'Customers', 'Returns', 'Expiry Tracking', 'Billing', 'Reports', 'Employees', 'Attendance', 'Settings'],
+    collections: ['categories', 'products', 'stockBatches', 'stockMovements', 'sales', 'saleItems', 'purchases', 'suppliers', 'customers', 'returns', 'payments', 'expenses', 'employees', 'attendance', 'shifts', 'leaveRequests', 'payroll', 'settings'],
     starterCatalog: [
       { id: 'grocery-rice', name: 'Rice', category: 'Grains', unit: 'kg', price: 0, active: true },
       { id: 'grocery-milk', name: 'Milk', category: 'Dairy', unit: 'pack', price: 0, active: true },
@@ -53,8 +57,9 @@ export const BUSINESS_MODULES: Record<BusinessType, BusinessModule> = {
   },
   workshop: {
     type: 'workshop', label: 'Workshop',
-    navigation: ['Dashboard', 'Customers', 'Vehicles & Equipment', 'Job Cards', 'Inspections', 'Estimates', 'Service Jobs', 'Spare Parts', 'Purchases', 'Invoices', 'Reports', 'Settings'],
-    collections: ['customers', 'assets', 'jobCards', 'inspections', 'estimates', 'serviceTasks', 'labourRates', 'parts', 'stockMovements', 'purchases', 'suppliers', 'invoices', 'payments', 'expenses', 'settings'],
+    staffFeatures: ['Employees', 'Attendance', 'Shifts', 'Leave', 'Overtime', 'Payroll', 'Attendance Reports'],
+    navigation: ['Dashboard', 'Customers', 'Vehicles & Equipment', 'Job Cards', 'Inspections', 'Estimates', 'Service Jobs', 'Spare Parts', 'Purchases', 'Invoices', 'Reports', 'Employees', 'Attendance', 'Settings'],
+    collections: ['customers', 'assets', 'jobCards', 'inspections', 'estimates', 'serviceTasks', 'labourRates', 'parts', 'stockMovements', 'purchases', 'suppliers', 'invoices', 'payments', 'expenses', 'employees', 'attendance', 'shifts', 'leaveRequests', 'payroll', 'settings'],
     starterCatalog: [
       { id: 'workshop-oil-change', name: 'Oil Change Labour', category: 'Service', unit: 'job', price: 0, active: true },
       { id: 'workshop-brake-check', name: 'Brake Inspection', category: 'Service', unit: 'job', price: 0, active: true },
