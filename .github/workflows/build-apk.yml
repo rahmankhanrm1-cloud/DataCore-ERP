@@ -38,6 +38,20 @@ jobs:
               login=login.replace('import { ShieldCheck,', 'import { UserPlus, ShieldCheck,')
               p.write_text(login)
           PY
+      - name: Diagnose customer trial business type schema
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/components/TrialManager.tsx')
+          lines=p.read_text().splitlines()
+          for i,line in enumerate(lines):
+              if any(term in line for term in ('businessType','trialAccounts','selectedBusiness','business_type','business:')):
+                  print(f'TrialManager line {i+1}: {line.strip()[:200]}')
+          p=Path('app/src/App.tsx')
+          for i,line in enumerate(p.read_text().splitlines()):
+              if any(term in line for term in ('trialAccounts','businessType','setTrialExpiry','trialStatus')):
+                  print(f'App line {i+1}: {line.strip()[:200]}')
+          PY
       - name: Include business module registry
         run: |
           mkdir -p app/src/business
