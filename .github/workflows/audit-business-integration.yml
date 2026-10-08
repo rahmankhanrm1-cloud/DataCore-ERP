@@ -33,4 +33,10 @@ jobs:
           print('Business type read in App:', 'businessType' in app)
           print('Dashboard imported in App:', 'BusinessDashboard' in app)
           print('INFO: Audit only. Customer business-specific routing is NOT claimed as integrated.')
+          for suffix in ('App.tsx','components/TrialManager.tsx','firebase.ts','businessModules.ts'):
+              matches=[(n,src) for n,src in files.items() if n.endswith(suffix)]
+              for name,src in matches[:1]:
+                  print('BEGIN FULL SOURCE',name)
+                  for i,line in enumerate(src.splitlines(),1): print(f'SRC {i}: {line[:500]}')
+                  print('END FULL SOURCE',name)
           PY
