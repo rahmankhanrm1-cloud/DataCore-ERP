@@ -49,6 +49,39 @@ jobs:
           cp trial-modules/billing.ts app/src/business/billing.ts
           cp trial-modules/BillingScreen.tsx app/src/business/BillingScreen.tsx
           test -s app/src/business/businessModules.ts
+      - name: Wire trial customer business dashboard into actual App
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/App.tsx')
+          s=p.read_text()
+          anchor="import { TrialManager } from './components/TrialManager';"
+          assert anchor in s, 'Missing App import anchor'
+          s=s.replace(anchor,anchor+"\nimport { BusinessDashboard } from './business/BusinessDashboard';\nimport type { BusinessType } from './business/businessModules';",1)
+          anchor="  const [trialExpiry, setTrialExpiry] = useState<number>(0);"
+          assert anchor in s, 'Missing expiry state'
+          s=s.replace(anchor,anchor+"\n  const [trialBusinessType, setTrialBusinessType] = useState<BusinessType | null>(null);",1)
+          anchor="      setTrialExpiry(expiry);"
+          assert anchor in s, 'Missing trial snapshot expiry'
+          s=s.replace(anchor,"      const kind = data?.businessType;\n      setTrialBusinessType(kind === 'restaurant' || kind === 'laundry' || kind === 'grocery' || kind === 'workshop' ? kind : null);\n"+anchor,1)
+          anchor="    if (!currentUser || isOwner()) return;"
+          assert anchor in s, 'Missing customer trial listener'
+          s=s.replace(anchor,"    if (!currentUser || isOwner()) { setTrialBusinessType(null); return; }",1)
+          anchor="  // Navigation Items"
+          assert anchor in s, 'Missing navigation anchor'
+          insertion="""  if (!isOwner()) {
+            if (!trialBusinessType) return <div className="min-h-screen bg-slate-950 text-white p-8">Invalid business type. Contact DataCore ERP administrator.<button className="block mt-4 bg-cyan-700 p-3 rounded" onClick={handleLogout}>Sign Out</button></div>;
+            return <div className="min-h-screen bg-slate-950 text-white">
+              <header className="p-4 bg-slate-900 flex justify-between items-center"><strong>DataCore ERP — {trialBusinessType}</strong><button onClick={handleLogout} className="bg-slate-700 rounded px-3 py-2">Sign Out</button></header>
+              <BusinessDashboard businessType={trialBusinessType} />
+            </div>;
+          }
+
+"""
+          s=s.replace(anchor,insertion+anchor,1)
+          p.write_text(s)
+          print('Integrated business type from trialAccounts into customer dashboard routing')
+          PY
       - name: Inspect Firestore initialization safely
         run: |
           python3 - <<'PY'
