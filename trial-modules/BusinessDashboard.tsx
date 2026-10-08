@@ -3,6 +3,7 @@ import { BillingScreen } from './BillingScreen';
 import { AttendanceScreen } from './AttendanceScreen';
 import { PayrollScreen } from './PayrollScreen';
 import { EmployeesScreen } from './EmployeesScreen';
+import { CatalogScreen } from './CatalogScreen';
 import { BUSINESS_MODULES, type BusinessType } from './businessModules';
 import { getCustomerNavigation, type BusinessAccess } from './businessAccess';
 
@@ -34,7 +35,9 @@ export function BusinessDashboard({ account, activePage, onNavigate }: Props) {
           </button>
         ))}
       </nav>
-      {selected === 'Employees' ? (
+      {selected === ({restaurant:'Menu',laundry:'Services',grocery:'Products',workshop:'Spare Parts'} as Record<BusinessType,string>)[account.businessType] ? (
+        <CatalogScreen tenantId={account.uid} businessType={account.businessType} />
+      ) : selected === 'Employees' ? (
         <EmployeesScreen tenantId={account.uid} businessType={account.businessType} />
       ) : selected === 'Payroll' ? (
         <PayrollScreen tenantId={account.uid} businessType={account.businessType} />
