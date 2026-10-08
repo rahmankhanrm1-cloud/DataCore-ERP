@@ -40,6 +40,7 @@ jobs:
           npm install --no-audit --no-fund
           npm install @capacitor/core@8 @capacitor/android@8 @capawesome/capacitor-google-sign-in --no-audit --no-fund
           npm install -D @capacitor/cli@8 --no-audit --no-fund
+          npm run lint
           npm run build
           printf '%s\n' '{"appId":"com.datacore.erp","appName":"DataCore ERP","webDir":"dist"}' > capacitor.config.json
           npx cap add android
