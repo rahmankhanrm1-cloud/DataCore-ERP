@@ -1,4 +1,4 @@
-name: Build DataCore ERP Native Google APK
+name: Build DataCore ERP APK
 on:
   push:
     branches: [main]
@@ -34,7 +34,7 @@ jobs:
           if old not in s: raise SystemExit("Google login block not found")
           p.write_text(s.replace(old,new))
           PY
-      - name: Install and build
+      - name: Install and build web app
         working-directory: app
         run: |
           npm install --no-audit --no-fund
@@ -44,13 +44,60 @@ jobs:
           printf '%s\n' '{"appId":"com.datacore.erp","appName":"DataCore ERP","webDir":"dist"}' > capacitor.config.json
           npx cap add android
           npx cap sync android
-      - name: Build APK and print signing SHA-1
-        working-directory: app/android
+      - name: Require signing secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
         run: |
+          for name in KEYSTORE_BASE64 KEY_ALIAS KEY_PASSWORD STORE_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required signing secret: $name"
+              exit 1
+            fi
+          done
+      - name: Sign release APK with permanent key
+        working-directory: app/android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > app/release-signing.jks
+          chmod 600 app/release-signing.jks
+          cat >> gradle.properties <<'EOF'
+          android.useAndroidX=true
+          EOF
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("app/build.gradle")
+          s=p.read_text()
+          marker="android {"
+          if marker not in s: raise SystemExit("Android Gradle block not found")
+          injection="""android {
+              signingConfigs {
+                  release {
+                      storeFile file('release-signing.jks')
+                      storePassword System.getenv('STORE_PASSWORD')
+                      keyAlias System.getenv('KEY_ALIAS')
+                      keyPassword System.getenv('KEY_PASSWORD')
+                  }
+              }
+          """
+          s=s.replace(marker,injection,1)
+          release="buildTypes {"
+          if release not in s: raise SystemExit("buildTypes block not found")
+          s=s.replace("release {", "release {\n            signingConfig signingConfigs.release", 1)
+          p.write_text(s)
+          PY
           chmod +x gradlew
-          ./gradlew assembleDebug
-          keytool -printcert -jarfile app/build/outputs/apk/debug/app-debug.apk | grep -E 'SHA1:|Owner:|Issuer:' || true
+          ./gradlew assembleRelease
+          keytool -printcert -jarfile app/build/outputs/apk/release/app-release.apk | grep 'SHA1:' || true
+          rm -f app/release-signing.jks
       - uses: actions/upload-artifact@v4
         with:
-          name: DataCore-ERP-Native-Google-APK
-          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+          name: DataCore-ERP-Signed-Release-APK
+          path: app/android/app/build/outputs/apk/release/app-release.apk
