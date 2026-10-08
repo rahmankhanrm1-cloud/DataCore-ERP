@@ -29,8 +29,8 @@ jobs:
           import { db } from './firebase';
           export const erpCollection = (name: string) => collection(db, 'tenants', 'test-tenant', name);
           STUB
-          sed -i "s|from '../tenant'|from './tenant'|" BillingScreen.tsx AttendanceScreen.tsx PayrollScreen.tsx EmployeesScreen.tsx CatalogScreen.tsx CustomersScreen.tsx WorkOrdersScreen.tsx InventoryScreen.tsx PurchasesScreen.tsx
-          sed -i "s|from '../firebase'|from './firebase'|" BillingScreen.tsx AttendanceScreen.tsx PayrollScreen.tsx EmployeesScreen.tsx CatalogScreen.tsx CustomersScreen.tsx WorkOrdersScreen.tsx InventoryScreen.tsx PurchasesScreen.tsx
+          sed -i "s|from '../tenant'|from './tenant'|" BillingScreen.tsx AttendanceScreen.tsx PayrollScreen.tsx EmployeesScreen.tsx CatalogScreen.tsx CustomersScreen.tsx WorkOrdersScreen.tsx InventoryScreen.tsx PurchasesScreen.tsx BusinessRecordsScreen.tsx
+          sed -i "s|from '../firebase'|from './firebase'|" BillingScreen.tsx AttendanceScreen.tsx PayrollScreen.tsx EmployeesScreen.tsx CatalogScreen.tsx CustomersScreen.tsx WorkOrdersScreen.tsx InventoryScreen.tsx PurchasesScreen.tsx BusinessRecordsScreen.tsx
           ./node_modules/.bin/tsc --noEmit --skipLibCheck --jsx react-jsx --esModuleInterop --target ES2022 --moduleResolution node --module commonjs *.ts *.tsx
           cat > test.ts <<'TS'
           import { calculateInvoice, businessInvoiceReference } from './billing';
