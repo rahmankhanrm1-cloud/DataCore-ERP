@@ -18,7 +18,7 @@ service cloud.firestore {
       allow update, delete: if owner() && request.resource.data.createdAt == resource.data.createdAt;
     }
     match /tenants/{uid}/{coll}/{docId} {
-      allow read, write: if active(uid) && coll in ['settings','products','sales','purchases','customers','suppliers','employees','expenses','payments'];
+      allow read, write: if active(uid) && coll in ['settings','products','sales','purchases','customers','suppliers','employees','expenses','payments','invoices'];
     }
     match /{coll}/{docId} {
       allow read, write: if owner() && coll in ['settings','products','sales','purchases','customers','suppliers','employees','expenses','payments'];
