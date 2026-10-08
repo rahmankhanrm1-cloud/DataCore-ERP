@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { addDoc, collection, onSnapshot, query, limit, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase';
+import { addDoc, onSnapshot, query, limit, serverTimestamp } from 'firebase/firestore';
+import { auth } from '../firebase';
+import { erpCollection } from '../tenant';
 import { calculateInvoice, type Invoice, type InvoiceLine, type PaymentMethod, CURRENCY_DECIMALS, type CurrencyCode } from './billing';
 import type { BusinessType } from './businessModules';
 
@@ -25,7 +26,8 @@ export function BillingScreen({ tenantId, businessType }: Props) {
   const [history, setHistory] = useState<Array<{id:string; currency:string; status:string; total:number; paid:number; balance:number}>>([]);
   const [historyError, setHistoryError] = useState('');
   useEffect(() => {
-    const invoices = collection(db, 'tenants', tenantId, 'invoices');
+    if (auth.currentUser?.uid !== tenantId) { setHistory([]); setHistoryError('Please sign in again'); return; }
+    const invoices = erpCollection('invoices');
     return onSnapshot(query(invoices, limit(50)), snapshot => {
       setHistory(snapshot.docs.map(d => {
         const value = d.data();
@@ -59,6 +61,7 @@ export function BillingScreen({ tenantId, businessType }: Props) {
   };
   const saveInvoice = async () => {
     if (saving) return;
+    if (auth.currentUser?.uid !== tenantId) { setError('Please sign in again'); return; }
     setSaving(true);
     try {
       if (lines.some(line => !line.description.trim())) throw new Error('Enter every item description');
@@ -67,7 +70,7 @@ export function BillingScreen({ tenantId, businessType }: Props) {
       const payments = payment ? [{ id: crypto.randomUUID(), amount: payment, method, receivedAt: new Date().toISOString() }] : [];
       const candidate: Invoice = { ...invoice, id: crypto.randomUUID(), invoiceNumber: 'PENDING', payments };
       const totals = calculateInvoice(candidate);
-      const saved = await addDoc(collection(db, 'tenants', tenantId, 'invoices'), {
+      const saved = await addDoc(erpCollection('invoices'), {
         businessType, tenantId, currency, lines, payments,
         status: totals.balance === 0 ? 'paid' : payments.length ? 'partial' : 'unpaid',
         createdAt: serverTimestamp(), totals
@@ -113,3 +116,4 @@ export function BillingScreen({ tenantId, businessType }: Props) {
     </section>
   </main>;
 }
+

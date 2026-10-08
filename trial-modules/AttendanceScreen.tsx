@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { addDoc, collection, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { addDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { auth } from '../firebase';
+import { erpCollection } from '../tenant';
 import { validateAttendance, type AttendanceRecord, type AttendanceStatus } from './employeeAttendance';
 import type { BusinessType } from './businessModules';
 
@@ -10,15 +11,18 @@ export function AttendanceScreen({tenantId,businessType}:{tenantId:string;busine
  const [status,setStatus]=useState<AttendanceStatus>('present');
  const [message,setMessage]=useState('');
  const [records,setRecords]=useState<AttendanceRecord[]>([]);
- useEffect(()=>onSnapshot(collection(db,'tenants',tenantId,'attendance'),snap=>{
+ useEffect(()=>{
+ if (auth.currentUser?.uid !== tenantId) { setRecords([]); setMessage('Please sign in again'); return; }
+ return onSnapshot(erpCollection('attendance'),snap=>{
    setRecords(snap.docs.map(d=>d.data() as AttendanceRecord).slice(0,50));
- },err=>setMessage(err.message)),[tenantId]);
+ },err=>setMessage(err.message));
+ },[tenantId]);
  async function save() {
    try {
      if(auth.currentUser?.uid!==tenantId) throw new Error('Please sign in again');
      const record:AttendanceRecord={id:crypto.randomUUID(),tenantId,businessType,employeeId:employeeId.trim(),workDate:date,status,breakMinutes:0,overtimeMinutes:0,recordedBy:tenantId};
      validateAttendance(record);
-     await addDoc(collection(db,'tenants',tenantId,'attendance'),{...record,createdAt:serverTimestamp()});
+     await addDoc(erpCollection('attendance'),{...record,createdAt:serverTimestamp()});
      setMessage('Attendance saved');setEmployeeId('');
    } catch(e) {setMessage(e instanceof Error?e.message:'Save failed');}
  }
@@ -33,3 +37,4 @@ export function AttendanceScreen({tenantId,businessType}:{tenantId:string;busine
  {records.map(r=><p key={r.id}>{r.workDate} — {r.employeeId} — {r.status}</p>)}
  </section>;
 }
+
