@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import React, { useEffect, useMemo, useState } from 'react';
+import { addDoc, collection, onSnapshot, query, limit, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { calculateInvoice, type Invoice, type InvoiceLine, type PaymentMethod, CURRENCY_DECIMALS, type CurrencyCode } from './billing';
 import type { BusinessType } from './businessModules';
@@ -22,6 +22,20 @@ export function BillingScreen({ tenantId, businessType }: Props) {
   const [amount, setAmount] = useState('0');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [history, setHistory] = useState<Array<{id:string; currency:string; status:string; total:number; paid:number; balance:number}>>([]);
+  const [historyError, setHistoryError] = useState('');
+  useEffect(() => {
+    const invoices = collection(db, 'tenants', tenantId, 'invoices');
+    return onSnapshot(query(invoices, limit(50)), snapshot => {
+      setHistory(snapshot.docs.map(d => {
+        const value = d.data();
+        return {id:d.id, currency:String(value.currency ?? ''), status:String(value.status ?? ''),
+          total:Number(value.totals?.total ?? 0), paid:Number(value.totals?.paid ?? 0),
+          balance:Number(value.totals?.balance ?? 0)};
+      }));
+      setHistoryError('');
+    }, e => setHistoryError(e.message));
+  }, [tenantId]);
   const invoice: Invoice = useMemo(() => ({
     id: 'draft', tenantId, businessType, invoiceNumber: 'DRAFT',
     createdAt: new Date().toISOString(), currency, lines, status: 'draft', payments: []
@@ -88,5 +102,14 @@ export function BillingScreen({ tenantId, businessType }: Props) {
     <button className="rounded bg-cyan-700 px-4 py-2" type="button" onClick={validateDraft}>Check draft</button>
     <button className="rounded bg-emerald-700 px-4 py-2 ml-2 disabled:opacity-50" type="button" disabled={saving || !totals} onClick={saveInvoice}>{saving ? 'Saving...' : 'Save invoice'}</button>
     {error && <p role="status" className="mt-3">{error}</p>}
+    <section className="mt-6 rounded bg-slate-800 p-4">
+      <h2 className="font-bold mb-2">Saved invoices / payment history (latest 50)</h2>
+      {historyError && <p role="alert" className="text-amber-300">History unavailable: {historyError}</p>}
+      {!historyError && history.length === 0 && <p>No saved invoices found.</p>}
+      {history.map(item => <div key={item.id} className="border-t border-slate-600 py-3 text-sm">
+        <p className="break-all">Invoice ID: {item.id}</p>
+        <p>{item.status} · Total {item.total} {item.currency} · Paid {item.paid} · Due {item.balance}</p>
+      </div>)}
+    </section>
   </main>;
 }
