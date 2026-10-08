@@ -1,5 +1,6 @@
 import React from 'react';
 import { BillingScreen } from './BillingScreen';
+import { AttendanceScreen } from './AttendanceScreen';
 import { BUSINESS_MODULES, type BusinessType } from './businessModules';
 import { getCustomerNavigation, type BusinessAccess } from './businessAccess';
 
@@ -31,7 +32,9 @@ export function BusinessDashboard({ account, activePage, onNavigate }: Props) {
           </button>
         ))}
       </nav>
-      {(selected === 'Billing' || selected === 'Invoices') ? (
+      {selected === 'Attendance' ? (
+        <AttendanceScreen tenantId={account.uid} businessType={account.businessType} />
+      ) : (selected === 'Billing' || selected === 'Invoices') ? (
         <BillingScreen tenantId={account.uid} businessType={account.businessType} />
       ) : selected === 'Dashboard' ? (
         <section>
