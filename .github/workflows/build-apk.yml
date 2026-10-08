@@ -33,6 +33,10 @@ jobs:
           new=f"      await GoogleSignIn.initialize({{ clientId: '{client_id}' }});\n      const result = await GoogleSignIn.signIn();\n      const credential = GoogleAuthProvider.credential(result.idToken);\n      await signInWithCredential(auth, credential);"
           if old not in s: raise SystemExit("Google login block not found")
           p.write_text(s.replace(old,new))
+          login=p.read_text()
+          if 'UserPlus' in login and 'UserPlus,' not in login.split("from 'lucide-react'")[0]:
+              login=login.replace('import { ShieldCheck,', 'import { UserPlus, ShieldCheck,')
+              p.write_text(login)
           PY
       - name: Validate trial source isolation before build
         run: |
