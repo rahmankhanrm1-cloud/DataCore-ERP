@@ -31,7 +31,7 @@ export function BusinessDashboard({ account, activePage, onNavigate }: Props) {
           </button>
         ))}
       </nav>
-      {selected === 'Billing' ? (
+      {(selected === 'Billing' || selected === 'Invoices') ? (
         <BillingScreen tenantId={account.uid} businessType={account.businessType} />
       ) : selected === 'Dashboard' ? (
         <section>
