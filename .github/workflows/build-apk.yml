@@ -50,7 +50,7 @@ jobs:
           for p in root.rglob('*.tsx'):
               if p.name in ('TrialManager.tsx','App.tsx'): continue
               content=p.read_text()
-              if re.search(r'\\b(?:collection|doc)\\s*\\(\\s*db\\s*,',content):
+              if 'collection(db,' in content or 'doc(db,' in content:
                   raise SystemExit('Direct Firestore access needs review: '+str(p))
           print('Trial isolation static preflight passed')
           PY
