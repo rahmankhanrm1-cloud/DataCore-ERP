@@ -1,4 +1,5 @@
 import React from 'react';
+import { BillingScreen } from './BillingScreen';
 import { BUSINESS_MODULES, type BusinessType } from './businessModules';
 import { getCustomerNavigation, type BusinessAccess } from './businessAccess';
 
@@ -30,7 +31,9 @@ export function BusinessDashboard({ account, activePage, onNavigate }: Props) {
           </button>
         ))}
       </nav>
-      {selected === 'Dashboard' ? (
+      {selected === 'Billing' ? (
+        <BillingScreen tenantId={account.uid} businessType={account.businessType} />
+      ) : selected === 'Dashboard' ? (
         <section>
           <h2 className="text-lg font-semibold mb-3">{module.label} modules</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
