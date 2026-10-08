@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
 import { calculateInvoice, type Invoice, type InvoiceLine, type PaymentMethod, CURRENCY_DECIMALS, type CurrencyCode } from './billing';
 import type { BusinessType } from './businessModules';
 
@@ -19,6 +21,7 @@ export function BillingScreen({ tenantId, businessType }: Props) {
   const [method, setMethod] = useState<PaymentMethod>('cash');
   const [amount, setAmount] = useState('0');
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   const invoice: Invoice = useMemo(() => ({
     id: 'draft', tenantId, businessType, invoiceNumber: 'DRAFT',
     createdAt: new Date().toISOString(), currency, lines, status: 'draft', payments: []
@@ -40,9 +43,30 @@ export function BillingScreen({ tenantId, businessType }: Props) {
       setError('Draft calculated. Database saving and receipt printing are not yet enabled.');
     } catch (e) { setError(e instanceof Error ? e.message : 'Invalid invoice'); }
   };
+  const saveInvoice = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      if (lines.some(line => !line.description.trim())) throw new Error('Enter every item description');
+      const payment = Number(amount);
+      if (!Number.isFinite(payment) || payment < 0) throw new Error('Invalid payment');
+      const payments = payment ? [{ id: crypto.randomUUID(), amount: payment, method, receivedAt: new Date().toISOString() }] : [];
+      const candidate: Invoice = { ...invoice, id: crypto.randomUUID(), invoiceNumber: 'PENDING', payments };
+      const totals = calculateInvoice(candidate);
+      const saved = await addDoc(collection(db, 'tenants', tenantId, 'invoices'), {
+        businessType, tenantId, currency, lines, payments,
+        status: totals.balance === 0 ? 'paid' : payments.length ? 'partial' : 'unpaid',
+        createdAt: serverTimestamp(), totals
+      });
+      setError('Invoice saved: ' + saved.id + '. Formal sequential invoice numbering and receipts are not yet enabled.');
+      setLines([emptyLine()]);
+      setAmount('0');
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not save invoice'); }
+    finally { setSaving(false); }
+  };
   return <main className="p-4 text-slate-100">
     <h1 className="text-xl font-bold mb-2">{names[businessType]}</h1>
-    <p className="text-amber-300 mb-4">Draft preview only — not saved to the database.</p>
+    <p className="text-amber-300 mb-4">Trial billing — database save requires deployed Firestore permissions.</p>
     <label className="block mb-3">Billing currency<select aria-label="Billing currency" className="block w-full text-slate-900 p-2 rounded" value={currency} onChange={e => setCurrency(e.target.value as CurrencyCode)}><option value="KWD">KWD — Kuwaiti Dinar</option><option value="INR">INR — Indian Rupee</option><option value="USD">USD — US Dollar</option></select></label>
     {lines.map(line => <div key={line.id} className="rounded-lg bg-slate-800 p-3 mb-3 grid grid-cols-2 gap-2">
       <label className="col-span-2">Item / Service<input aria-label="Item or service" className="block w-full text-slate-900 p-2 rounded" value={line.description} onChange={e => update(line.id, { description: e.target.value })}/></label>
@@ -62,6 +86,7 @@ export function BillingScreen({ tenantId, businessType }: Props) {
     <label className="block mb-3">Payment method<select className="block w-full text-slate-900 p-2 rounded" value={method} onChange={e => setMethod(e.target.value as PaymentMethod)}><option value="cash">Cash</option><option value="card">Card</option><option value="bank_transfer">Bank transfer</option><option value="other">Other</option></select></label>
     <label className="block mb-3">Payment amount ({currency})<input className="block w-full text-slate-900 p-2 rounded" type="number" min="0" step="0.001" value={amount} onChange={e => setAmount(e.target.value)}/></label>
     <button className="rounded bg-cyan-700 px-4 py-2" type="button" onClick={validateDraft}>Check draft</button>
+    <button className="rounded bg-emerald-700 px-4 py-2 ml-2 disabled:opacity-50" type="button" disabled={saving || !totals} onClick={saveInvoice}>{saving ? 'Saving...' : 'Save invoice'}</button>
     {error && <p role="status" className="mt-3">{error}</p>}
   </main>;
 }
