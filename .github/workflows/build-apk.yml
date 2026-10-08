@@ -86,9 +86,7 @@ jobs:
           s=s.replace(anchor,anchor+"\n  const [trialBusinessType, setTrialBusinessType] = useState<BusinessType | null>(null);",1)
           anchor="      setTrialExpiry(expiry);"
           assert anchor in s, 'Missing trial snapshot expiry'
-          s=s.replace(anchor,"      const kind = data?.businessType;\n      const normalizedKind = typeof kind === 'string' ? kind.trim().toLowerCase() : '';
-      const resolvedKind = normalizedKind === 'car workshop' || normalizedKind === 'car_workshop' ? 'workshop' : normalizedKind;
-      setTrialBusinessType(resolvedKind === 'restaurant' || resolvedKind === 'laundry' || resolvedKind === 'grocery' || resolvedKind === 'workshop' ? resolvedKind : null);\n"+anchor,1)
+          s=s.replace(anchor,"      const kind = data?.businessType;\n      const normalizedKind = typeof kind === 'string' ? kind.trim().toLowerCase() : '';\n      const resolvedKind = normalizedKind === 'car workshop' || normalizedKind === 'car_workshop' ? 'workshop' : normalizedKind;\n      setTrialBusinessType(resolvedKind === 'restaurant' || resolvedKind === 'laundry' || resolvedKind === 'grocery' || resolvedKind === 'workshop' ? resolvedKind : null);\n"+anchor,1)
           anchor="    if (!currentUser || isOwner()) return;"
           assert anchor in s, 'Missing customer trial listener'
           s=s.replace(anchor,"    if (!currentUser || isOwner()) { setTrialBusinessType(null); return; }",1)
