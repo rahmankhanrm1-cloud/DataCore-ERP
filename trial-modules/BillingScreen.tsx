@@ -23,8 +23,9 @@ export function BillingScreen({ tenantId, businessType }: Props) {
   const [amount, setAmount] = useState('0');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [history, setHistory] = useState<Array<{id:string; currency:string; status:string; total:number; paid:number; balance:number}>>([]);
+  const [history, setHistory] = useState<Array<{id:string; currency:string; status:string; total:number; paid:number; balance:number; lines:InvoiceLine[]; payments:Array<{amount:number;method:string}>}>>([]);
   const [historyError, setHistoryError] = useState('');
+  const [receipt, setReceipt] = useState<{id:string; currency:string; status:string; total:number; paid:number; balance:number; lines:InvoiceLine[]; payments:Array<{amount:number;method:string}>}|null>(null);
   useEffect(() => {
     if (auth.currentUser?.uid !== tenantId) { setHistory([]); setHistoryError('Please sign in again'); return; }
     const invoices = erpCollection('invoices');
@@ -33,7 +34,7 @@ export function BillingScreen({ tenantId, businessType }: Props) {
         const value = d.data();
         return {id:d.id, currency:String(value.currency ?? ''), status:String(value.status ?? ''),
           total:Number(value.totals?.total ?? 0), paid:Number(value.totals?.paid ?? 0),
-          balance:Number(value.totals?.balance ?? 0)};
+          balance:Number(value.totals?.balance ?? 0), lines:Array.isArray(value.lines)?value.lines:[], payments:Array.isArray(value.payments)?value.payments:[]};
       }));
       setHistoryError('');
     }, e => setHistoryError(e.message));
@@ -112,8 +113,21 @@ export function BillingScreen({ tenantId, businessType }: Props) {
       {history.map(item => <div key={item.id} className="border-t border-slate-600 py-3 text-sm">
         <p className="break-all">Invoice ID: {item.id}</p>
         <p>{item.status} · Total {item.total} {item.currency} · Paid {item.paid} · Due {item.balance}</p>
+        <button type="button" className="underline text-cyan-300" onClick={()=>setReceipt(item)}>View receipt</button>
       </div>)}
     </section>
+    {receipt && <section className="mt-5 bg-white text-black rounded p-4" aria-label="Invoice receipt">
+      <h2 className="font-bold text-xl">{names[businessType]} — Receipt</h2>
+      <p className="break-all">Invoice reference: {receipt.id}</p>
+      <p>Status: {receipt.status}</p>
+      {receipt.lines.map((line,i)=><p key={line.id||i}>{line.description} × {line.quantity} — {line.unitPrice} {receipt.currency}</p>)}
+      <hr className="my-2"/>
+      <p>Total: {receipt.total} {receipt.currency}</p><p>Paid: {receipt.paid} {receipt.currency}</p><p>Balance: {receipt.balance} {receipt.currency}</p>
+      {receipt.payments.map((p,i)=><p key={i}>Payment: {p.amount} {receipt.currency} ({p.method})</p>)}
+      <p className="text-xs mt-2">Trial invoice record. Not a payment processor confirmation.</p>
+      <button type="button" className="underline mr-4" onClick={()=>setReceipt(null)}>Close</button>
+      <button type="button" className="underline" onClick={()=>window.print()}>Print / Save PDF</button>
+    </section>}
   </main>;
 }
 
