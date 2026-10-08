@@ -1,0 +1,36 @@
+name: Audit Customer Business Dashboard Integration
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/trial-v1]
+    paths:
+      - .github/workflows/audit-business-integration.yml
+      - trial-modules/**
+      - DataCore-ERP-Trial-V1-Ready-for-GitHub.zip
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect real customer login routing and trial account shape
+        run: |
+          python3 - <<'PY'
+          import zipfile,re
+          from pathlib import Path
+          z=zipfile.ZipFile('DataCore-ERP-Trial-V1-Ready-for-GitHub.zip')
+          files={n:z.read(n).decode('utf-8','replace') for n in z.namelist() if n.endswith(('.ts','.tsx')) and 'node_modules/' not in n}
+          for suffix in ('App.tsx','components/TrialManager.tsx','tenant.ts'):
+              found=[(n,s) for n,s in files.items() if n.endswith(suffix)]
+              if not found: raise SystemExit('FAIL missing '+suffix)
+              for name,src in found:
+                  print('FILE:',name)
+                  for i,line in enumerate(src.splitlines(),1):
+                      if any(k in line for k in ('businessType','trialAccounts','TrialManager','trialStatus','setTrial','setUser','onAuthStateChanged','Dashboard','createdAt','expiresAt','tenantCollection')):
+                          print(f'{i}: {line[:220]}')
+          app=next(s for n,s in files.items() if n.endswith('App.tsx'))
+          manager=next(s for n,s in files.items() if n.endswith('components/TrialManager.tsx'))
+          print('Business type stored in TrialManager:', 'businessType' in manager)
+          print('Business type read in App:', 'businessType' in app)
+          print('Dashboard imported in App:', 'BusinessDashboard' in app)
+          print('INFO: Audit only. Customer business-specific routing is NOT claimed as integrated.')
+          PY
