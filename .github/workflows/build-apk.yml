@@ -46,6 +46,7 @@ jobs:
           cp trial-modules/businessAccess.ts app/src/business/businessAccess.ts
           cp trial-modules/BusinessDashboard.tsx app/src/business/BusinessDashboard.tsx
           cp trial-modules/TrialBusinessRouter.tsx app/src/business/TrialBusinessRouter.tsx
+          cp trial-modules/billing.ts app/src/business/billing.ts
           test -s app/src/business/businessModules.ts
       - name: Inspect Firestore initialization safely
         run: |
