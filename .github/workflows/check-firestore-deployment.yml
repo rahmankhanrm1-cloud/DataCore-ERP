@@ -1,0 +1,36 @@
+name: Check Firestore Trial Deployment Readiness
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/trial-v1]
+    paths:
+      - firebase.json
+      - .firebaserc
+      - firestore.rules
+      - .github/workflows/check-firestore-deployment.yml
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify named database target and rules syntax
+        run: |
+          node - <<'JS'
+          const fs = require('fs');
+          const cfg = JSON.parse(fs.readFileSync('firebase.json','utf8'));
+          const rc = JSON.parse(fs.readFileSync('.firebaserc','utf8'));
+          const expected = 'ai-studio-datacoreerp-b0639fea-e4e0-462c-82de-61344a56cc65';
+          if (rc.projects.default !== 'galvanic-iris-8ggh3') throw Error('Unexpected project');
+          if (!Array.isArray(cfg.firestore) || cfg.firestore.length !== 1 || cfg.firestore[0].database !== expected || cfg.firestore[0].rules !== 'firestore.rules') throw Error('Unexpected database or rules target');
+          if (!fs.readFileSync('firestore.rules','utf8').includes('match /tenants/{uid}/{coll}/{docId}')) throw Error('Tenant rules missing');
+          console.log('PASS: Exact named database configuration verified; NO live deployment performed');
+          JS
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools@14
+      - name: Check CLI version
+        run: firebase --version
+      - name: Confirm deploy is disabled
+        run: echo 'This workflow intentionally has no firebase deploy command or live Firebase credentials.'
