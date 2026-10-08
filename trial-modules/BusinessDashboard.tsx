@@ -2,6 +2,7 @@ import React from 'react';
 import { BillingScreen } from './BillingScreen';
 import { AttendanceScreen } from './AttendanceScreen';
 import { PayrollScreen } from './PayrollScreen';
+import { EmployeesScreen } from './EmployeesScreen';
 import { BUSINESS_MODULES, type BusinessType } from './businessModules';
 import { getCustomerNavigation, type BusinessAccess } from './businessAccess';
 
@@ -33,7 +34,9 @@ export function BusinessDashboard({ account, activePage, onNavigate }: Props) {
           </button>
         ))}
       </nav>
-      {selected === 'Payroll' ? (
+      {selected === 'Employees' ? (
+        <EmployeesScreen tenantId={account.uid} businessType={account.businessType} />
+      ) : selected === 'Payroll' ? (
         <PayrollScreen tenantId={account.uid} businessType={account.businessType} />
       ) : selected === 'Attendance' ? (
         <AttendanceScreen tenantId={account.uid} businessType={account.businessType} />
