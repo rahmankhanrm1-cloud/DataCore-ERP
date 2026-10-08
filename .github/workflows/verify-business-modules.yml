@@ -24,6 +24,12 @@ jobs:
           cp "$GITHUB_WORKSPACE"/trial-modules/*.ts "$GITHUB_WORKSPACE"/trial-modules/*.tsx business/
           printf "export const db: any = {};\\nexport const auth: any = {currentUser:null};\\n" > firebase.ts
           cp business/*.ts business/*.tsx .
+          cat > tenant.ts <<'STUB'
+          import { collection } from 'firebase/firestore';
+          import { db } from './firebase';
+          export const erpCollection = (name: string) => collection(db, 'tenants', 'test-tenant', name);
+          STUB
+          sed -i "s|from '../tenant'|from './tenant'|" BillingScreen.tsx AttendanceScreen.tsx
           sed -i "s|from '../firebase'|from './firebase'|" BillingScreen.tsx AttendanceScreen.tsx
           ./node_modules/.bin/tsc --noEmit --skipLibCheck --jsx react-jsx --esModuleInterop --target ES2022 --moduleResolution node --module commonjs *.ts *.tsx
           cat > test.ts <<'TS'
