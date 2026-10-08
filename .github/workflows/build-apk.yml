@@ -49,6 +49,7 @@ jobs:
           cp trial-modules/billing.ts app/src/business/billing.ts
           cp trial-modules/BillingScreen.tsx app/src/business/BillingScreen.tsx
           cp trial-modules/AttendanceScreen.tsx app/src/business/AttendanceScreen.tsx
+          cp trial-modules/PayrollScreen.tsx app/src/business/PayrollScreen.tsx
           test -s app/src/business/businessModules.ts
       - name: Wire trial customer business dashboard into actual App
         run: |
