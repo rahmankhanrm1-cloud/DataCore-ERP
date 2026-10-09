@@ -1,7 +1,7 @@
-name: Build DataCore ERP APK
+name: Build DataCore ERP Trial V1 (Unverified)
 on:
   push:
-    branches: [main]
+    branches: [feature/trial-v1]
   workflow_dispatch:
 jobs:
   build:
@@ -18,7 +18,7 @@ jobs:
       - name: Extract and patch native Google Sign-In
         run: |
           rm -rf app && mkdir app
-          unzip -o datacore-erp-final.zip -d app
+          unzip -o DataCore-ERP-Trial-V1-Ready-for-GitHub.zip -d app
           if [ -d app/datacore_work ]; then shopt -s dotglob; mv app/datacore_work/* app/; rmdir app/datacore_work; fi
           python3 - <<'PY'
           from pathlib import Path
@@ -33,6 +33,111 @@ jobs:
           new=f"      await GoogleSignIn.initialize({{ clientId: '{client_id}' }});\n      const result = await GoogleSignIn.signIn();\n      const credential = GoogleAuthProvider.credential(result.idToken);\n      await signInWithCredential(auth, credential);"
           if old not in s: raise SystemExit("Google login block not found")
           p.write_text(s.replace(old,new))
+          login=p.read_text()
+          if 'UserPlus' in login and 'UserPlus,' not in login.split("from 'lucide-react'")[0]:
+              login=login.replace('import { ShieldCheck,', 'import { UserPlus, ShieldCheck,')
+              p.write_text(login)
+          PY
+      - name: Diagnose customer trial business type schema
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/components/TrialManager.tsx')
+          lines=p.read_text().splitlines()
+          for i,line in enumerate(lines):
+              if any(term in line for term in ('businessType','trialAccounts','selectedBusiness','business_type','business:')):
+                  print(f'TrialManager line {i+1}: {line.strip()[:200]}')
+          p=Path('app/src/App.tsx')
+          for i,line in enumerate(p.read_text().splitlines()):
+              if any(term in line for term in ('trialAccounts','businessType','setTrialExpiry','trialStatus')):
+                  print(f'App line {i+1}: {line.strip()[:200]}')
+          PY
+      - name: Include business module registry
+        run: |
+          mkdir -p app/src/business
+          cp trial-modules/businessModules.ts app/src/business/businessModules.ts
+          cp trial-modules/employeeAttendance.ts app/src/business/employeeAttendance.ts
+          cp trial-modules/businessAccess.ts app/src/business/businessAccess.ts
+          cp trial-modules/BusinessDashboard.tsx app/src/business/BusinessDashboard.tsx
+          cp trial-modules/TrialBusinessRouter.tsx app/src/business/TrialBusinessRouter.tsx
+          cp trial-modules/billing.ts app/src/business/billing.ts
+          cp trial-modules/BillingScreen.tsx app/src/business/BillingScreen.tsx
+          cp trial-modules/AttendanceScreen.tsx app/src/business/AttendanceScreen.tsx
+          cp trial-modules/PayrollScreen.tsx app/src/business/PayrollScreen.tsx
+          cp trial-modules/EmployeesScreen.tsx app/src/business/EmployeesScreen.tsx
+          cp trial-modules/CatalogScreen.tsx app/src/business/CatalogScreen.tsx
+          cp trial-modules/CustomersScreen.tsx app/src/business/CustomersScreen.tsx
+          cp trial-modules/WorkOrdersScreen.tsx app/src/business/WorkOrdersScreen.tsx
+          cp trial-modules/InventoryScreen.tsx app/src/business/InventoryScreen.tsx
+          cp trial-modules/PurchasesScreen.tsx app/src/business/PurchasesScreen.tsx
+          cp trial-modules/BusinessRecordsScreen.tsx app/src/business/BusinessRecordsScreen.tsx
+          test -s app/src/business/businessModules.ts
+      - name: Wire trial customer business dashboard into actual App
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/App.tsx')
+          s=p.read_text()
+          anchor="import { TrialManager } from './components/TrialManager';"
+          assert anchor in s, 'Missing App import anchor'
+          s=s.replace(anchor,anchor+"\nimport { BusinessDashboard } from './business/BusinessDashboard';\nimport type { BusinessType } from './business/businessModules';",1)
+          anchor="  const [trialExpiry, setTrialExpiry] = useState<number>(0);"
+          assert anchor in s, 'Missing expiry state'
+          s=s.replace(anchor,anchor+"\n  const [trialBusinessType, setTrialBusinessType] = useState<BusinessType | null>(null);",1)
+          anchor="      setTrialExpiry(expiry);"
+          assert anchor in s, 'Missing trial snapshot expiry'
+          s=s.replace(anchor,"      const kind = data?.businessType;\n      const normalizedKind = typeof kind === 'string' ? kind.trim().toLowerCase() : '';\n      const resolvedKind = normalizedKind === 'car workshop' || normalizedKind === 'car_workshop' ? 'workshop' : normalizedKind;\n      setTrialBusinessType(resolvedKind === 'restaurant' || resolvedKind === 'laundry' || resolvedKind === 'grocery' || resolvedKind === 'workshop' ? resolvedKind : null);\n"+anchor,1)
+          anchor="    if (!currentUser || isOwner()) return;"
+          assert anchor in s, 'Missing customer trial listener'
+          s=s.replace(anchor,"    if (!currentUser || isOwner()) { setTrialBusinessType(null); return; }",1)
+          anchor="  // Navigation Items"
+          assert anchor in s, 'Missing navigation anchor'
+          insertion="  if (!isOwner()) {\n    if (!trialBusinessType) return <div className=\"min-h-screen bg-slate-950 text-white p-8\">Invalid business type. Contact DataCore ERP administrator.<button className=\"block mt-4 bg-cyan-700 p-3 rounded\" onClick={handleLogout}>Sign Out</button></div>;\n    return <div className=\"min-h-screen bg-slate-950 text-white\">\n      <header className=\"p-4 bg-slate-900 flex justify-between items-center\"><strong>DataCore ERP — {trialBusinessType}</strong><button onClick={handleLogout} className=\"bg-slate-700 rounded px-3 py-2\">Sign Out</button></header>\n      <BusinessDashboard account={{uid: currentUser.uid, businessType: trialBusinessType, status: 'active', expiresAtMillis: trialExpiry}} activePage={activeModule} onNavigate={setActiveModule} />\n    </div>;\n  }\n\n"
+          s=s.replace(anchor,insertion+anchor,1)
+          p.write_text(s)
+          print('Integrated business type from trialAccounts into customer dashboard routing')
+          PY
+      - name: Include owner private storage
+        run: python3 private-storage/integrate.py app
+      - name: Inspect Firestore initialization safely
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,re
+          dbid=json.loads(Path('firebase.json').read_text())['firestore'][0]['database']
+          print('Expected named database:',dbid)
+          files=[p for p in Path('app').rglob('*') if p.suffix in ('.ts','.tsx','.js','.jsx') and 'node_modules' not in p.parts]
+          found=[]
+          for p in files:
+              src=p.read_text(errors='replace')
+              for m in re.finditer(r'(getFirestore|initializeFirestore|firebaseConfig|databaseId|firestoreDatabaseId)',src):
+                  excerpt=src[max(0,m.start()-100):m.end()+160].replace('\\n',' ')
+                  found.append((str(p),excerpt))
+          for name,excerpt in found[:35]:
+              print(name,':',excerpt[:260])
+          print('Firestore references found:',len(found))
+          if not found: print('WARNING: No Firestore initialization found; investigate source layout')
+          print('Diagnostic only: no APK database patch attempted.')
+          PY
+      - name: Validate trial source isolation before build
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('app/src')
+          required=['App.tsx','tenant.ts','components/TrialManager.tsx']
+          for file in required:
+              if not (root/file).exists(): raise SystemExit('Missing trial file: '+file)
+          tenant=(root/'tenant.ts').read_text()
+          if "['tenants', user.uid, name]" not in tenant: raise SystemExit('Tenant isolation helper missing')
+          app=(root/'App.tsx').read_text()
+          if "trialAccounts" not in app or "trialStatus !== 'active'" not in app: raise SystemExit('Trial access gate missing')
+          for p in root.rglob('*.tsx'):
+              if p.name in ('TrialManager.tsx','App.tsx'): continue
+              content=p.read_text()
+              if 'collection(db,' in content or 'doc(db,' in content:
+                  raise SystemExit('Direct Firestore access needs review: '+str(p))
+          print('Trial isolation static preflight passed')
           PY
       - name: Install and build web app
         working-directory: app
@@ -40,10 +145,14 @@ jobs:
           npm install --no-audit --no-fund
           npm install @capacitor/core@8 @capacitor/android@8 @capawesome/capacitor-google-sign-in --no-audit --no-fund
           npm install -D @capacitor/cli@8 --no-audit --no-fund
+          npm run lint
+          ./node_modules/.bin/esbuild ../private-storage/drive.test.ts --bundle --platform=node --outfile=/tmp/datacore-drive-test.cjs
+          node /tmp/datacore-drive-test.cjs
           npm run build
           printf '%s\n' '{"appId":"com.datacore.erp","appName":"DataCore ERP","webDir":"dist"}' > capacitor.config.json
           npx cap add android
           npx cap sync android
+          python3 ../private-storage/integrate.py . android
       - name: Require signing secrets
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -68,6 +177,7 @@ jobs:
           set -euo pipefail
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > app/release-signing.jks
           chmod 600 app/release-signing.jks
+          keytool -list -v -keystore app/release-signing.jks -storepass:env STORE_PASSWORD | grep -E 'SHA1:|SHA256:'
           cat >> gradle.properties <<'EOF'
           android.useAndroidX=true
           EOF
@@ -101,5 +211,6 @@ jobs:
           rm -f app/release-signing.jks
       - uses: actions/upload-artifact@v4
         with:
-          name: DataCore-ERP-Signed-Release-APK
+          name: DataCore-ERP-Private-Storage-Fix-${{ github.run_number }}
           path: app/android/app/build/outputs/apk/release/app-release.apk
+

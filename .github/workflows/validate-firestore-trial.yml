@@ -1,0 +1,34 @@
+name: Validate Trial Firestore Rules
+on:
+  push:
+    branches: [feature/trial-v1]
+    paths:
+      - firestore.rules
+      - trial-src/rules-test.cjs
+      - .github/workflows/validate-firestore-trial.yml
+  workflow_dispatch:
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install test dependencies
+        run: |
+          mkdir -p /tmp/datacore-rules
+          cd /tmp/datacore-rules
+          npm init -y
+          npm install --no-audit --no-fund firebase@12 @firebase/rules-unit-testing@5 firebase-tools@14
+      - name: Run Firestore emulator security tests
+        run: |
+          cd /tmp/datacore-rules
+          cp "$GITHUB_WORKSPACE/firestore.rules" .
+          cp "$GITHUB_WORKSPACE/trial-src/rules-test.cjs" .
+          printf '%s\n' '{"firestore":{"rules":"firestore.rules","database":"(default)"},"emulators":{"firestore":{"port":8080}}}' > firebase.json
+          npx firebase emulators:exec --only firestore --project demo-datacore-trial "node rules-test.cjs"

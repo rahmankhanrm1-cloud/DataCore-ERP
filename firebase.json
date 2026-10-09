@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "ai-studio-datacoreerp-b0639fea-e4e0-462c-82de-61344a56cc65",
+      "rules": "firestore.rules"
+    }
+  ]
+}

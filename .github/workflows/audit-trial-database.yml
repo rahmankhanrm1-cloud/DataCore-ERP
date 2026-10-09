@@ -1,0 +1,36 @@
+name: Audit Trial APK Firebase Database
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/trial-v1]
+    paths:
+      - .github/workflows/audit-trial-database.yml
+      - DataCore-ERP-Trial-V1-Ready-for-GitHub.zip
+      - firebase.json
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check database used by the packaged app
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,zipfile,re
+          expected=json.loads(Path('firebase.json').read_text())['firestore'][0]['database']
+          z=zipfile.ZipFile('DataCore-ERP-Trial-V1-Ready-for-GitHub.zip')
+          files={n:z.read(n).decode('utf-8','replace') for n in z.namelist() if n.endswith(('.ts','.tsx','.json','.js')) and 'node_modules/' not in n and 'bun.lock' not in n}
+          print('Target named database:',expected)
+          print('Relevant Firebase initialization and references:')
+          for name,src in files.items():
+            if ('getFirestore(' in src or 'initializeFirestore(' in src or expected in src or 'firebase-applet-config' in name):
+              print('FILE',name)
+              for line in src.splitlines():
+                if any(term in line for term in ('getFirestore(', 'initializeFirestore(', 'databaseId', expected, 'firebaseConfig', 'initializeApp(', 'projectId')):
+                  print(' ',line[:260])
+          sdk=[(n,s) for n,s in files.items() if re.search(r'\b(getFirestore|initializeFirestore)\s*\(',s)]
+          if not sdk: raise SystemExit('FAIL: No Firestore initialization found; manual review required')
+          if not any(expected in s for n,s in sdk):
+            raise SystemExit('FAIL: App Firestore initialization does not reference the named database targeted by rules. DO NOT DEPLOY.')
+          print('PASS: Firestore initialization source references the exact named database. NO DEPLOYMENT.')
+          PY

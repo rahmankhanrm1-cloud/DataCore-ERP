@@ -1,0 +1,37 @@
+name: Audit Trial App Firestore Compatibility
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/trial-v1]
+    paths:
+      - .github/workflows/audit-trial-firestore.yml
+      - DataCore-ERP-Trial-V1-Ready-for-GitHub.zip
+      - firestore.rules
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect actual app source without deployment
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile,re
+          z=zipfile.ZipFile('DataCore-ERP-Trial-V1-Ready-for-GitHub.zip')
+          files={n: z.read(n).decode('utf-8','replace') for n in z.namelist() if n.endswith(('.ts','.tsx','.json')) and ('node_modules/' not in n)}
+          print('Source files:',len(files))
+          for name,src in files.items():
+              if name.endswith(('TrialManager.tsx','tenant.ts','firebase.ts','firebaseConfig.ts','App.tsx')):
+                  print('\nFILE',name)
+                  for line in src.splitlines():
+                      if any(t in line for t in ('serverTimestamp','createdAt','trialAccounts','getFirestore','collection(','doc(','tenant','signInWithEmailAndPassword')):
+                          print(line[:230])
+          rules=Path('firestore.rules').read_text()
+          if 'duration.value(72' not in rules: raise SystemExit('FAIL: 72-hour rule missing')
+          trial=[(n,s) for n,s in files.items() if n.endswith('TrialManager.tsx')]
+          if not trial: raise SystemExit('FAIL: TrialManager missing')
+          for name,src in trial:
+              if 'serverTimestamp(' not in src:
+                  raise SystemExit('FAIL: TrialManager does not use serverTimestamp() for createdAt; verify creation before deploying')
+          print('\nPASS: TrialManager uses serverTimestamp; review printed source details before live deployment')
+          PY
