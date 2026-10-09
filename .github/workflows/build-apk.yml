@@ -177,6 +177,7 @@ jobs:
           set -euo pipefail
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > app/release-signing.jks
           chmod 600 app/release-signing.jks
+          keytool -list -v -keystore app/release-signing.jks -storepass:env STORE_PASSWORD | grep -E 'SHA1:|SHA256:'
           cat >> gradle.properties <<'EOF'
           android.useAndroidX=true
           EOF
@@ -210,6 +211,6 @@ jobs:
           rm -f app/release-signing.jks
       - uses: actions/upload-artifact@v4
         with:
-          name: DataCore-ERP-Trial-V1-UNVERIFIED
+          name: DataCore-ERP-Private-Storage-Fix-${{ github.run_number }}
           path: app/android/app/build/outputs/apk/release/app-release.apk
 

@@ -57,7 +57,7 @@ export function PrivateStorageScreen() {
   return <section className="space-y-5 max-w-4xl">
     <div><h1 className="text-2xl font-bold">My Private Storage</h1><p className="text-slate-400 mt-2 text-sm">Your personal files in {STORAGE_EMAIL}. Storage uses your existing Google plan.</p></div>
     {!account ? <div className="space-y-4 p-5 bg-slate-900 rounded-2xl">
-      <p className="text-sm">Connect your storage account and approve Google access. Your ERP login stays unchanged. Only files created by this storage feature are listed.</p>
+      <p className="text-sm">Select {STORAGE_EMAIL} in the Google account picker, then approve Drive access. Your ERP login stays unchanged. Only files created by this storage feature are listed.</p>
       <button className={button} disabled={busy} onClick={connect}>{busy?'Connecting…':'Connect My Google Drive'}</button>
     </div> : <>
       <div className="p-4 bg-slate-900 rounded-xl space-y-2"><p className="break-all text-sm">{account.user.emailAddress}</p><p className="text-cyan-300">Google account usage: {bytes(account.storageQuota.usage)} / {account.storageQuota.limit?bytes(account.storageQuota.limit):'Limit unavailable'}</p><p className="text-xs text-slate-400">Includes Gmail, Photos and Drive. This is the quota reported by Google when connected.</p><button disabled={busy} className="text-sm underline" onClick={disconnect}>Disconnect from this session</button></div>

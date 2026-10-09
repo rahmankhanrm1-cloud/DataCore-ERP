@@ -24,7 +24,9 @@ This module uses the owner's existing Google Drive quota. It does not create a n
 1. Enable Google Drive API in the existing Google Cloud project used by the Android OAuth client.
 2. Verify Android OAuth package `com.datacore.erp` and the existing release signing SHA-1. This feature uses Android AuthorizationClient and does not require a client secret in the APK.
 3. Configure the OAuth consent screen for the non-sensitive `https://www.googleapis.com/auth/drive.file` scope. If the consent screen is in testing, add the storage account as a test user.
-4. Add rahmansarifa86@gmail.com to the owner's Android device, sign into ERP as the verified owner (Google sign-in), open My Private Storage, tap Connect My Google Drive, and approve consent.
+4. Add rahmansarifa86@gmail.com to the owner's Android device, sign into ERP as the verified owner (Google sign-in), open My Private Storage, tap Connect My Google Drive, select the storage account in Google's account picker, and approve consent. A wrong account is rejected before requesting Drive access. ERP authentication is never changed.
 5. Confirm the account email and available quota; test upload, folder creation, download, trash/recovery in Drive, reconnect, and logout. Check that customer accounts have no storage menu and cannot obtain the owner's token.
 
 Repository changes do not enable APIs or alter OAuth settings. No Drive files have been accessed, uploaded or shared by developing this feature. Do not claim end-to-end verification until the owner's consent and physical-device testing succeed.
+
+If Google consent closes without showing a page, the Android callback reads any returned Google error Intent and displays the status code instead of assuming the owner pressed Cancel. Empty responses remain inconclusive and explicitly point to OAuth/Google Play services checks. The build prints only the public signing certificate SHA-1/SHA-256 for comparison with the Android OAuth client; it does not print signing passwords or key material.
