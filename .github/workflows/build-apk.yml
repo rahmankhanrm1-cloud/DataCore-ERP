@@ -97,6 +97,8 @@ jobs:
           p.write_text(s)
           print('Integrated business type from trialAccounts into customer dashboard routing')
           PY
+      - name: Include owner private storage
+        run: python3 private-storage/integrate.py app
       - name: Inspect Firestore initialization safely
         run: |
           python3 - <<'PY'
@@ -144,10 +146,13 @@ jobs:
           npm install @capacitor/core@8 @capacitor/android@8 @capawesome/capacitor-google-sign-in --no-audit --no-fund
           npm install -D @capacitor/cli@8 --no-audit --no-fund
           npm run lint
+          ./node_modules/.bin/esbuild ../private-storage/drive.test.ts --bundle --platform=node --outfile=/tmp/datacore-drive-test.cjs
+          node /tmp/datacore-drive-test.cjs
           npm run build
           printf '%s\n' '{"appId":"com.datacore.erp","appName":"DataCore ERP","webDir":"dist"}' > capacitor.config.json
           npx cap add android
           npx cap sync android
+          python3 ../private-storage/integrate.py . android
       - name: Require signing secrets
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
